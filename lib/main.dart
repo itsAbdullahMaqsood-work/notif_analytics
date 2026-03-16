@@ -5,9 +5,10 @@ import 'package:provider/provider.dart';
 import 'services/database_service.dart';
 import 'viewmodels/history_viewmodel.dart';
 import 'viewmodels/notification_viewmodel.dart';
+import 'viewmodels/maps_viewmodel.dart';
 import 'routes/app_routes.dart';
 import 'views/history_view.dart';
-import 'views/home_view.dart';
+import 'views/main_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 
@@ -30,7 +31,6 @@ class NotifApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        /// DATABASE
         Provider<DatabaseService>.value(value: db),
 
         ProxyProvider<DatabaseService, HistoryService>(
@@ -58,6 +58,10 @@ class NotifApp extends StatelessWidget {
           update: (_, service, previous) =>
               previous ?? NotificationViewModel(service: service),
         ),
+
+        ChangeNotifierProvider<MapsViewModel>(
+          create: (_) => MapsViewModel(),
+        ),
       ],
       child: const MyApp(),
     );
@@ -79,9 +83,11 @@ class MyAppState extends State<MyApp> {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final history = context.read<HistoryViewModel>();
       final notif = context.read<NotificationViewModel>();
+      final maps = context.read<MapsViewModel>();
 
       await history.loadEntries();
       await notif.init();
+      await maps.init();
     });
   }
 
@@ -107,7 +113,7 @@ class MyAppState extends State<MyApp> {
       themeMode: ThemeMode.system,
       initialRoute: AppRoutes.home,
       routes: {
-        AppRoutes.home: (_) => const HomeView(),
+        AppRoutes.home: (_) => const MainScreen(),
         AppRoutes.history: (_) => const HistoryView(),
       },
     );

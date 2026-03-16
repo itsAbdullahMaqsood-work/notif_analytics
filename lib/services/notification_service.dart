@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:notif_analytics/viewmodels/notification_viewmodel.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class NotificationService {
@@ -23,6 +22,7 @@ class NotificationService {
       priority: Priority.high,
       playSound: true,
       enableVibration: false,
+      icon: 'alarm',
     ),
     iOS: DarwinNotificationDetails(
       presentSound: false,
@@ -31,11 +31,11 @@ class NotificationService {
     ),
   );
 
-  Future<void> initPerm() async {
-    permStatus = await Permission.notification.status;
-  }
+  Future<void> initPerm() async {}
 
   Future<void> init() async {
+    permStatus = await Permission.notification.status;
+
     _plugin
         .resolvePlatformSpecificImplementation<
           AndroidFlutterLocalNotificationsPlugin
