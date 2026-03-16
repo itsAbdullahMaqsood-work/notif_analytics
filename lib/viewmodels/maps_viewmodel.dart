@@ -3,34 +3,20 @@ import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 class MapsViewModel extends ChangeNotifier {
-  // ── Controller ────────────────────────────────────────────────────────────
   GoogleMapController? _mapController;
 
   void onMapCreated(GoogleMapController controller) {
     _mapController = controller;
-    // Controller is now ready — safe to animate camera
     if (_currentLocation != null) {
-      // Already have location cached, jump straight to it
       animateCameraTo(_currentLocation!, zoom: 15.0);
     } else {
-      // First time — fetch GPS then animate
       fetchCurrentLocation();
     }
   }
 
-  // ── Default demo center (Portland, OR) ────────────────────────────────────
   static const LatLng _defaultCenter = LatLng(45.521563, -122.677433);
 
-  // ── Map Type ──────────────────────────────────────────────────────────────
-  MapType _mapType = MapType.normal;
-  MapType get mapType => _mapType;
 
-  void setMapType(MapType type) {
-    _mapType = type;
-    notifyListeners();
-  }
-
-  // ── Camera ────────────────────────────────────────────────────────────────
   CameraPosition get initialCameraPosition => const CameraPosition(
         target: _defaultCenter,
         zoom: 13.0,
@@ -79,7 +65,6 @@ class MapsViewModel extends ChangeNotifier {
     );
   }
 
-  // ── Current Location ──────────────────────────────────────────────────────
   LatLng? _currentLocation;
   LatLng? get currentLocation => _currentLocation;
 
@@ -124,7 +109,6 @@ class MapsViewModel extends ChangeNotifier {
     }
   }
 
-  // ── Markers ───────────────────────────────────────────────────────────────
   final Map<String, Marker> _markerMap = {};
   Set<Marker> get markers => _markerMap.values.toSet();
 
@@ -183,7 +167,7 @@ class MapsViewModel extends ChangeNotifier {
     final origin = _currentLocation;
     if (origin == null) return;
     _customCounter++;
-    final off = _offsets[(_customCounter + 4) % _offsets.length]; // offset group shifted
+    final off = _offsets[(_customCounter + 4) % _offsets.length];
     final point = LatLng(origin.latitude + off[0], origin.longitude + off[1]);
     final id = 'custom_$_customCounter';
     final marker = Marker(
@@ -235,23 +219,14 @@ class MapsViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ── Polylines ─────────────────────────────────────────────────────────────
   final Map<String, Polyline> _polylineMap = {};
   Set<Polyline> get polylines => _polylineMap.values.toSet();
-
-  LatLng? _dynamicTarget; // set when user long-presses the map
-
-  void onMapLongPress(LatLng point) {
-    _dynamicTarget = point;
-    notifyListeners();
-  }
 
   Future<void> addStaticPolyline() async {
     if (_currentLocation == null) await fetchCurrentLocation();
     final origin = _currentLocation;
-    if (origin == null) return; // still no location, abort
+    if (origin == null) return;
     const id = 'static_route';
-    // Draws a simple S-curve route around your current position
     final polyline = Polyline(
       polylineId: const PolylineId(id),
       points: [
@@ -269,27 +244,11 @@ class MapsViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void addDynamicPolyline() {
-    final target = _dynamicTarget;
-    if (target == null) return;
-    const id = 'dynamic_route';
-    final polyline = Polyline(
-      polylineId: const PolylineId(id),
-      points: [_defaultCenter, target],
-      color: Colors.orange,
-      width: 4,
-      patterns: [PatternItem.dash(20), PatternItem.gap(10)],
-    );
-    _polylineMap[id] = polyline;
-    notifyListeners();
-  }
-
   void clearPolylines() {
     _polylineMap.clear();
     notifyListeners();
   }
 
-  // ── Polygons ──────────────────────────────────────────────────────────────
   final Map<String, Polygon> _polygonMap = {};
   Set<Polygon> get polygons => _polygonMap.values.toSet();
 
@@ -298,14 +257,13 @@ class MapsViewModel extends ChangeNotifier {
     final origin = _currentLocation;
     if (origin == null) return;
     const id = 'demo_polygon';
-    // Rectangle (~600m × 800m) centered on your current position
     final polygon = Polygon(
       polygonId: const PolygonId(id),
       points: [
-        LatLng(origin.latitude + 0.003, origin.longitude - 0.004), // NW
-        LatLng(origin.latitude + 0.003, origin.longitude + 0.004), // NE
-        LatLng(origin.latitude - 0.003, origin.longitude + 0.004), // SE
-        LatLng(origin.latitude - 0.003, origin.longitude - 0.004), // SW
+        LatLng(origin.latitude + 0.003, origin.longitude - 0.004),
+        LatLng(origin.latitude + 0.003, origin.longitude + 0.004),
+        LatLng(origin.latitude - 0.003, origin.longitude + 0.004),
+        LatLng(origin.latitude - 0.003, origin.longitude - 0.004),
       ],
       fillColor: Colors.green.withOpacity(0.25),
       strokeColor: Colors.green,
@@ -320,7 +278,6 @@ class MapsViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ── Circles ───────────────────────────────────────────────────────────────
   final Map<String, Circle> _circleMap = {};
   Set<Circle> get circles => _circleMap.values.toSet();
 
@@ -332,7 +289,7 @@ class MapsViewModel extends ChangeNotifier {
     final circle = Circle(
       circleId: const CircleId(id),
       center: origin,
-      radius: 400, // 400 m radius around your current position
+      radius: 400,
       fillColor: Colors.purple.withOpacity(0.2),
       strokeColor: Colors.purple,
       strokeWidth: 2,
@@ -346,49 +303,16 @@ class MapsViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ── Clear All ─────────────────────────────────────────────────────────────
   void clearAll() {
     _markerMap.clear();
     _polylineMap.clear();
     _polygonMap.clear();
     _circleMap.clear();
     _selectedMarkerId = null;
-    _dynamicTarget = null;
     notifyListeners();
   }
 
-  // ── Map UI Controls ───────────────────────────────────────────────────────
-  bool _showZoomControls = true;
-  bool _showCompass = true;
-  bool _showMyLocationButton = true;
-
-  bool get showZoomControls => _showZoomControls;
-  bool get showCompass => _showCompass;
-  bool get showMyLocationButton => _showMyLocationButton;
-
-  void toggleZoomControls() {
-    _showZoomControls = !_showZoomControls;
-    notifyListeners();
-  }
-
-  void toggleCompass() {
-    _showCompass = !_showCompass;
-    notifyListeners();
-  }
-
-  void toggleMyLocationButton() {
-    _showMyLocationButton = !_showMyLocationButton;
-    notifyListeners();
-  }
-
-
-  // ── Long-press indicator ──────────────────────────────────────────────────
-  LatLng? get dynamicTarget => _dynamicTarget;
-
-  // ── Init ──────────────────────────────────────────────────────────────────
   Future<void> init() async {
-    // Only preload the custom marker icon; location is fetched in onMapCreated
-    // once the GoogleMapController is ready.
     await loadCustomIcon();
   }
 }

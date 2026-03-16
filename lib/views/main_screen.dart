@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'home_view.dart';
 import 'maps_view.dart';
 import 'analytics_view.dart';
-import 'settings_view.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -14,11 +13,7 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
 
-  final List<Widget> _pages = const [
-    HomeView(),
-    MapsView(),
-    AnalyticsView(),
-  ];
+  final List<Widget> _pages = const [HomeView(), MapsView(), AnalyticsView()];
 
   @override
   Widget build(BuildContext context) {
