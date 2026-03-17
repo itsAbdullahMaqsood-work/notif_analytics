@@ -1,18 +1,16 @@
-import 'dart:async';
+import 'dart:core';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:notif_analytics/viewmodels/notification_viewmodel.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class NotificationService {
+  final Future<void> Function() onNotificationShown;
+
+  NotificationService({required this.onNotificationShown});
+
   final _plugin = FlutterLocalNotificationsPlugin();
   late PermissionStatus permStatus;
-
-  final _notificationShownController =
-      StreamController<RemoteMessage>.broadcast();
-  Stream<RemoteMessage> get onNotificationShown =>
-      _notificationShownController.stream;
 
   final NotificationDetails details = NotificationDetails(
     android: AndroidNotificationDetails(
@@ -71,12 +69,8 @@ class NotificationService {
     }
 
     final notif = message?.notification;
-
     await _plugin.show(notif.hashCode, notif?.title, notif?.body, details);
-
-    if (message != null) {
-      _notificationShownController.add(message);
-    }
+    await onNotificationShown();
   }
 
   void listenToMessages(Future<void> Function(RemoteMessage) onMessage) {
