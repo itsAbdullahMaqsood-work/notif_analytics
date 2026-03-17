@@ -8,7 +8,7 @@ class AnalyticsView extends StatelessWidget {
     return const Scaffold(
       body: Center(
         child: Text(
-          'Analytics',
+          'Baad mein add karunga inshallah',
           style: TextStyle(fontSize: 24),
         ),
       ),

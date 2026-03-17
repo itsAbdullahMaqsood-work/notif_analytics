@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
@@ -124,6 +125,29 @@ class MapsViewModel extends ChangeNotifier {
   int _markerCounter = 0;
   int _tapCounter = 0;
 
+  Future<String> _getAddress(LatLng point) async {
+    try {
+      final placemarks = await placemarkFromCoordinates(
+        point.latitude,
+        point.longitude,
+      );
+      if (placemarks.isEmpty) throw Exception('No placemarks found');
+      final p = placemarks.first;
+      final parts = [
+        if ((p.name ?? '').isNotEmpty) p.name,
+        if ((p.thoroughfare ?? '').isNotEmpty && p.thoroughfare != p.name)
+          p.thoroughfare,
+        if ((p.locality ?? '').isNotEmpty) p.locality,
+        if ((p.administrativeArea ?? '').isNotEmpty) p.administrativeArea,
+      ];
+      return parts.isNotEmpty
+          ? parts.join(', ')
+          : '${point.latitude.toStringAsFixed(5)}, ${point.longitude.toStringAsFixed(5)}';
+    } catch (_) {
+      return '${point.latitude.toStringAsFixed(5)}, ${point.longitude.toStringAsFixed(5)}';
+    }
+  }
+
   static const List<List<double>> _offsets = [
     [0.0, 0.0],
     [0.001, 0.0],
@@ -144,11 +168,12 @@ class MapsViewModel extends ChangeNotifier {
     final off = _offsets[_markerCounter % _offsets.length];
     final point = LatLng(origin.latitude + off[0], origin.longitude + off[1]);
     final id = 'default_$_markerCounter';
+    final address = await _getAddress(point);
     final marker = Marker(
       markerId: MarkerId(id),
       position: point,
       infoWindow: InfoWindow(
-        title: 'Marker #$_markerCounter',
+        title: address,
         snippet:
             '${point.latitude.toStringAsFixed(5)}, ${point.longitude.toStringAsFixed(5)}',
       ),
@@ -168,6 +193,7 @@ class MapsViewModel extends ChangeNotifier {
     final off = _offsets[(_customCounter + 4) % _offsets.length];
     final point = LatLng(origin.latitude + off[0], origin.longitude + off[1]);
     final id = 'custom_$_customCounter';
+    final address = await _getAddress(point);
     final marker = Marker(
       markerId: MarkerId(id),
       position: point,
@@ -175,7 +201,7 @@ class MapsViewModel extends ChangeNotifier {
           _customIcon ??
           BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueViolet),
       infoWindow: InfoWindow(
-        title: 'Custom #$_customCounter',
+        title: address,
         snippet:
             '${point.latitude.toStringAsFixed(5)}, ${point.longitude.toStringAsFixed(5)}',
       ),
@@ -204,14 +230,15 @@ class MapsViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void addTapMarker(LatLng point) {
+  Future<void> addTapMarker(LatLng point) async {
     _tapCounter++;
     final id = 'tap_$_tapCounter';
+    final address = await _getAddress(point);
     final marker = Marker(
       markerId: MarkerId(id),
       position: point,
       infoWindow: InfoWindow(
-        title: 'Tap #$_tapCounter',
+        title: address,
         snippet:
             '${point.latitude.toStringAsFixed(5)}, ${point.longitude.toStringAsFixed(5)}',
       ),

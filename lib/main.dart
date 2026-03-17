@@ -35,7 +35,6 @@ class NotifApp extends StatelessWidget {
       providers: [
         /// DATABASE
         Provider<DatabaseService>.value(value: db),
-   Provider<DatabaseService>.value(value: db),
 
         ProxyProvider<DatabaseService, HistoryService>(
            update: (_, database, __) => HistoryService(database),
@@ -111,7 +110,6 @@ class MyAppState extends State<MyApp> {
       themeMode: ThemeMode.system,
       home: const MainScreen(),
       routes: {
-        AppRoutes.home: (_) => const MainScreen(),
         AppRoutes.maps: (_) => const MapsView(),
         AppRoutes.analytics: (_) => const AnalyticsView(),
         AppRoutes.history: (_) => const HistoryView(),
