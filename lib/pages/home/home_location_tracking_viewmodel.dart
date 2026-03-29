@@ -1,14 +1,15 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:flutter_background_service/flutter_background_service.dart';
+import '../../services/location_service.dart';
+import '../../services/location_background_service.dart';
 
-import '../../services/location_realtime_service.dart';
-
-class LocationTrackingViewModel extends ChangeNotifier {
-  LocationTrackingViewModel({
-    required LocationRealtimeService service,
-  }) : _service = service;
+class HomeLocationTrackingViewModel extends ChangeNotifier {
+  HomeLocationTrackingViewModel({required LocationRealtimeService service})
+    : _service = service;
 
   final LocationRealtimeService _service;
   StreamSubscription<Position>? _positionSubscription;
@@ -19,6 +20,28 @@ class LocationTrackingViewModel extends ChangeNotifier {
 
   String? _error;
   String? get lastError => _error;
+
+  bool allowTracking = false;
+
+  AppLifecycleState _state = AppLifecycleState.resumed;
+
+  void onAppLifecycleChanged(AppLifecycleState state) async {
+    _state = state;
+    if (state == AppLifecycleState.resumed) {
+      await stopBackgroundTracking();
+    } else if (state == AppLifecycleState.inactive && allowTracking) {
+      await startBackgroundTracking();
+    } else if (state == AppLifecycleState.paused && allowTracking) {
+      await startBackgroundTracking();
+    } else if (state == AppLifecycleState.detached && allowTracking) {
+      await startBackgroundTracking();
+    }
+  }
+
+  Future<void> toggleBackgroundTracking(bool value) async {
+    allowTracking = value;
+    notifyListeners();
+  }
 
   Future<void> toggleTracking() async {
     if (_isTracking) {
@@ -57,7 +80,7 @@ class LocationTrackingViewModel extends ChangeNotifier {
         locationSettings: const LocationSettings(
           accuracy: LocationAccuracy.high,
         ),
-      ).listen(_onPosition, onError: errorFunc);
+      ).listen(_onPosition);
 
       _isTracking = true;
       notifyListeners();
@@ -69,8 +92,10 @@ class LocationTrackingViewModel extends ChangeNotifier {
   }
 
   Future<void> stopTracking() async {
+    if (!_isTracking) return;
     await _positionSubscription?.cancel();
     _positionSubscription = null;
+    FlutterBackgroundService().invoke('stop');
     _isTracking = false;
     notifyListeners();
   }
@@ -87,6 +112,7 @@ class LocationTrackingViewModel extends ChangeNotifier {
         latitude: position.latitude,
         longitude: position.longitude,
         accuracy: position.accuracy,
+        state: _state,
       );
       _lastWriteAt = now;
       _error = null;
@@ -97,13 +123,11 @@ class LocationTrackingViewModel extends ChangeNotifier {
     }
   }
 
-  void errorFunc(Object _) {
-    _error = 'Location stream error.';
-    notifyListeners();
-  }
-
   @override
   void dispose() {
+    if (_isTracking) {
+      stopTracking();
+    }
     _positionSubscription?.cancel();
     super.dispose();
   }

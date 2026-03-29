@@ -34,6 +34,26 @@ android {
         versionName = flutter.versionName
     }
 
+    flavorDimensions += "environment"
+    productFlavors {
+        create("development") {
+            dimension = "environment"
+            applicationIdSuffix = ".dev"
+            versionNameSuffix = "-dev"
+            manifestPlaceholders["appName"] = "Notif Analytics Dev"
+        }
+        create("staging") {
+            dimension = "environment"
+            applicationIdSuffix = ".staging"
+            versionNameSuffix = "-staging"
+            manifestPlaceholders["appName"] = "Notif Analytics Staging"
+        }
+        create("production") {
+            dimension = "environment"
+            manifestPlaceholders["appName"] = "Notif Analytics"
+        }
+    }
+
     buildTypes {
         release {
             // TODO: Add your own signing config for the release build.

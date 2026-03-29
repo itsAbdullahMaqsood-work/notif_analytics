@@ -1,17 +1,29 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<!-- to allow app to send notifications -->
 <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+<!-- to allow app to access location -->
 <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
 <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+<!-- to allow app to schedule exact alarms -->
 <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
 <uses-permission android:name="android.permission.USE_EXACT_ALARM"/>
+<!-- to allow app to access background service -->
+<uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+<uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+<!-- to allow app to access background location -->
+<uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
     <application
-        android:label="notif_analytics"
+        android:label="${appName}"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
 
+        <service
+            android:name="id.flutter.flutter_background_service.BackgroundService"
+            android:foregroundServiceType="location" />
+
         <receiver
-    android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver"
-    android:exported="false"/>
+            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver"
+            android:exported="false"/>
 
 <receiver
     android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver"

@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'maps_viewmodel.dart';
 
 class MapsView extends StatelessWidget {
+  static const String route = '/maps';
   const MapsView({super.key});
 
   @override

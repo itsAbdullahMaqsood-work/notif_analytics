@@ -1,0 +1,4 @@
+#include "Release.xcconfig"
+FLAVOR_NAME=production
+APP_DISPLAY_NAME=Notif Analytics
+PRODUCT_BUNDLE_IDENTIFIER=com.example.notifAnalytics

@@ -1,26 +1,27 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:notif_analytics/background/firebase_messaging_background.dart';
+import 'package:notif_analytics/config/app_flavor.dart';
 import 'package:notif_analytics/services/history_service.dart';
-import 'package:notif_analytics/services/location_realtime_service.dart';
+import 'package:notif_analytics/services/location_service.dart';
 import 'package:notif_analytics/services/notification_service.dart';
 import 'package:notif_analytics/services/workmanager_service.dart';
 import 'package:provider/provider.dart';
 import 'services/database_service.dart';
-import 'pages/home/location_tracking_viewmodel.dart';
 import 'pages/notification_history/history_viewmodel.dart';
-import 'pages/notification_history/notification_viewmodel.dart';
-import 'routes/app_routes.dart';
-import 'pages/map/maps_viewmodel.dart';
-import 'pages/notification_history/history_view.dart';
-import 'pages/map/maps_view.dart';
-import 'pages/analytics/analytics_view.dart';
 import 'navigation_screen.dart';
+import 'routes/app_routes.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'firebase_options.dart';
+import 'package:flutter_background_service/flutter_background_service.dart';
+import 'background/firbase_location_background.dart';
 
 Future<void> main() async {
+  await bootstrap(flavor: AppFlavor.production);
+}
+
+Future<void> bootstrap({required AppFlavor flavor}) async {
   WidgetsFlutterBinding.ensureInitialized();
   try {
     await Firebase.initializeApp(
@@ -28,7 +29,7 @@ Future<void> main() async {
     );
   } catch (e) {
     if (e is! FirebaseException || e.code != 'duplicate-app') {
-      rethrow; 
+      rethrow;
     }
   }
   await FirebaseMessaging.instance.setForegroundNotificationPresentationOptions(
@@ -40,28 +41,35 @@ Future<void> main() async {
 
   final db = DatabaseService();
   await db.init();
-
+  await initBackgroundService();
   final workManagerService = WorkManagerService();
   await workManagerService.initialize();
 
-  runApp(NotifApp(db: db, workManagerService: workManagerService));
+  runApp(
+    NotifApp(
+      db: db,
+      workManagerService: workManagerService,
+      flavor: flavor,
+    ),
+  );
 }
 
 class NotifApp extends StatelessWidget {
   final DatabaseService db;
   final WorkManagerService workManagerService;
+  final AppFlavor flavor;
 
   const NotifApp({
     super.key,
     required this.db,
     required this.workManagerService,
+    required this.flavor,
   });
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        /// DATABASE
         Provider<DatabaseService>.value(value: db),
         Provider<WorkManagerService>.value(value: workManagerService),
         Provider<LocationRealtimeService>(
@@ -72,45 +80,17 @@ class NotifApp extends StatelessWidget {
           update: (_, database, _) => HistoryService(database),
         ),
 
-        ChangeNotifierProxyProvider<HistoryService, HistoryViewModel>(
-          create: (c) => HistoryViewModel(c.read<HistoryService>()),
-          update: (_, historyService, previous) =>
-              previous ?? HistoryViewModel(historyService),
-        ),
-
         Provider<NotificationService>(create: (_) => NotificationService()),
-
-        ChangeNotifierProxyProvider2<
-          NotificationService,
-          WorkManagerService,
-          NotificationViewModel
-        >(
-          create: (c) => NotificationViewModel(
-            service: c.read<NotificationService>(),
-            workManagerService: c.read<WorkManagerService>(),
-          ),
-          update: (_, notificationService, workManagerService, previous) =>
-              previous ??
-              NotificationViewModel(
-                service: notificationService,
-                workManagerService: workManagerService,
-              ),
-        ),
-
-        ChangeNotifierProvider<MapsViewModel>(create: (_) => MapsViewModel()),
-        ChangeNotifierProvider<LocationTrackingViewModel>(
-          create: (c) => LocationTrackingViewModel(
-            service: c.read<LocationRealtimeService>(),
-          ),
-        ),
       ],
-      child: const MyApp(),
+      child: MyApp(flavor: flavor),
     );
   }
 }
 
 class MyApp extends StatefulWidget {
-  const MyApp({super.key});
+  final AppFlavor flavor;
+
+  const MyApp({super.key, required this.flavor});
 
   @override
   State<MyApp> createState() => MyAppState();
@@ -122,19 +102,18 @@ class MyAppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
-
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final history = context.read<HistoryViewModel>();
-      final notif = context.read<NotificationViewModel>();
       final notificationService = context.read<NotificationService>();
-
-      await history.loadEntries();
-      await notif.init();
+      if (await FlutterBackgroundService().isRunning()) {
+        FlutterBackgroundService().invoke('stop');
+      }
 
       _notificationShownSub = notificationService.onNotificationShown.listen((
         _,
       ) {
-        if (mounted) context.read<HistoryViewModel>().addEntry();
+        if (!mounted) return;
+        final historyVm = context.read<HistoryViewModel?>();
+        historyVm?.addEntry();
       });
     });
   }
@@ -149,6 +128,19 @@ class MyAppState extends State<MyApp> {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Notifier',
+      builder: (context, child) {
+        if (!widget.flavor.showBanner || child == null) {
+          return child ?? const SizedBox.shrink();
+        }
+        return Banner(
+          location: BannerLocation.topStart,
+          message: widget.flavor.bannerLabel,
+          color: widget.flavor == AppFlavor.development
+              ? Colors.orange
+              : Colors.blue,
+          child: child,
+        );
+      },
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
@@ -165,12 +157,8 @@ class MyAppState extends State<MyApp> {
         ),
       ),
       themeMode: ThemeMode.system,
-      home: const MainScreen(),
-      routes: {
-        AppRoutes.maps: (_) => const MapsView(),
-        AppRoutes.analytics: (_) => const AnalyticsView(),
-        AppRoutes.history: (_) => const HistoryView(),
-      },
+      initialRoute: MainScreen.route,
+      onGenerateRoute: generateRoute,
     );
   }
 }

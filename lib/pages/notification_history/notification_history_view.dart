@@ -3,8 +3,9 @@ import 'package:provider/provider.dart';
 import 'history_viewmodel.dart';
 import '../../widgets/history_tile.dart';
 
-class HistoryView extends StatelessWidget {
-  const HistoryView({super.key});
+class NotificationHistoryView extends StatelessWidget {
+  static const String route = '/history';
+  const NotificationHistoryView({super.key});
 
   @override
   Widget build(BuildContext context) {

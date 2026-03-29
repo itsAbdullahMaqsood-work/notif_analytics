@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -56,8 +55,9 @@ class NotificationService {
     );
 
     await _initTimezone();
-    _fcmToken = await FirebaseMessaging.instance.getToken();
-    getToken();
+    try {
+      _fcmToken = await getToken();
+    } catch (_) {}
     await _plugin.initialize(settings);
   }
 

@@ -1,4 +1,5 @@
 import 'package:firebase_database/firebase_database.dart';
+import 'package:flutter/material.dart';
 
 class LocationRealtimeService {
   LocationRealtimeService({
@@ -15,12 +16,14 @@ class LocationRealtimeService {
     required double latitude,
     required double longitude,
     required double accuracy,
+    required AppLifecycleState state,
   }) async {
     await _locationRef.set({
       'latitude': latitude,
       'longitude': longitude,
       'accuracy': accuracy,
-      'updatedAt': ServerValue.timestamp,
+      'updatedAt': DateTime.now().toIso8601String(),
+      'state': state.name,
     });
   }
 }

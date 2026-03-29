@@ -14,3 +14,27 @@ A few resources to get you started if this is your first Flutter project:
 For help getting started with Flutter development, view the
 [online documentation](https://docs.flutter.dev/), which offers tutorials,
 samples, guidance on mobile development, and a full API reference.
+
+## Flavors
+
+This project supports three environments:
+
+- `development`
+- `staging`
+- `production`
+
+### Run
+
+```bash
+flutter run --flavor development -t lib/main_development.dart
+flutter run --flavor staging -t lib/main_staging.dart
+flutter run --flavor production -t lib/main_production.dart
+```
+
+### Build
+
+```bash
+flutter build apk --flavor development -t lib/main_development.dart
+flutter build apk --flavor staging -t lib/main_staging.dart
+flutter build apk --flavor production -t lib/main_production.dart
+```

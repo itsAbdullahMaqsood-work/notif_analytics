@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 class AnalyticsView extends StatelessWidget {
+  static const String route = '/analytics';
   const AnalyticsView({super.key});
 
   @override

@@ -29,7 +29,8 @@ class NotificationViewModel extends ChangeNotifier {
   /// Remaining time until the one-off (10s) reminder fires
   Duration? get oneOffRemaining {
     if (_oneOffScheduledAt == null) return null;
-    final remaining = oneOffReminderDelay - (DateTime.now().difference(_oneOffScheduledAt!));
+    final remaining =
+        oneOffReminderDelay - (DateTime.now().difference(_oneOffScheduledAt!));
     return remaining.isNegative ? Duration.zero : remaining;
   }
 

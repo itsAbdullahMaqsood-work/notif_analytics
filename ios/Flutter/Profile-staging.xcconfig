@@ -1,0 +1,4 @@
+#include "Profile.xcconfig"
+FLAVOR_NAME=staging
+APP_DISPLAY_NAME=Notif Analytics Staging
+PRODUCT_BUNDLE_IDENTIFIER=com.example.notifAnalytics.staging

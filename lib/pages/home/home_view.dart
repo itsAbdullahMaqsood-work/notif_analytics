@@ -1,12 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:notif_analytics/pages/notification_history/notification_history_view.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
-import 'location_tracking_viewmodel.dart';
+import 'home_location_tracking_viewmodel.dart';
 import '../notification_history/history_viewmodel.dart';
 import '../notification_history/notification_viewmodel.dart';
-import '../../routes/app_routes.dart';
 
 String _formatRemaining(Duration d) {
   final minutes = d.inMinutes;
@@ -18,6 +18,7 @@ String _formatRemaining(Duration d) {
 }
 
 class HomeView extends StatefulWidget {
+  static const String route = '/home';
   const HomeView({super.key});
 
   @override
@@ -71,10 +72,19 @@ class _HomeViewState extends State<HomeView> {
 
   @override
   Widget build(BuildContext context) {
-    final notifVm = context.watch<NotificationViewModel>();
-    final locationVm = context.watch<LocationTrackingViewModel>();
-    final int count = context.watch<HistoryViewModel>().count;
     final ColorScheme colors = Theme.of(context).colorScheme;
+    final notifVm = context.watch<NotificationViewModel?>();
+    final locationVm = context.watch<HomeLocationTrackingViewModel?>();
+    final historyVm = context.watch<HistoryViewModel?>();
+
+    if (notifVm == null || locationVm == null) {
+      return Scaffold(
+        backgroundColor: colors.surface,
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    final int count = historyVm?.count ?? 0;
 
     if (notifVm.isPermanentlyDenied) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -114,7 +124,8 @@ class _HomeViewState extends State<HomeView> {
           Padding(
             padding: const EdgeInsets.only(right: 16),
             child: GestureDetector(
-              onTap: () => Navigator.pushNamed(context, AppRoutes.history),
+              onTap: () =>
+                  Navigator.pushNamed(context, NotificationHistoryView.route),
               child: Stack(
                 alignment: Alignment.center,
                 children: [
@@ -237,7 +248,25 @@ class _HomeViewState extends State<HomeView> {
                   ),
                 ),
               ),
-
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Text(
+                    "Allow background tracking",
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: colors.onSurface,
+                    ),
+                  ),
+                  Spacer(),
+                  Switch(
+                    value: locationVm.allowTracking,
+                    onChanged: (value) =>
+                        locationVm.toggleBackgroundTracking(value),
+                  ),
+                ],
+              ),
               const Spacer(),
               if (oneOff != null || local != null || periodic != null) ...[
                 Text(
